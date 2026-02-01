@@ -24,6 +24,10 @@ jobs:
             dockerfile: scenarios/tau2/Dockerfile.tau2-agent
           - name: tau2-evaluator
             dockerfile: scenarios/tau2/Dockerfile.tau2-evaluator
+          - name: invest-agent
+            dockerfile: scenarios/invest/agent/Dockerfile
+          - name: invest-evaluator
+            dockerfile: scenarios/invest/evaluator/Dockerfile
 
     # These permissions are required for the workflow to:
     # - Read repository contents (checkout code)

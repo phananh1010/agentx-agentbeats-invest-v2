@@ -1,40 +1,41 @@
 import argparse
-import os
+import sys
+from pathlib import Path
+
+# Ensure project root is on sys.path so `scenarios` package imports work when run as a script.
+ROOT = Path(__file__).resolve().parents[4]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 import uvicorn
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
-from a2a.types import (
-    AgentCapabilities,
-    AgentCard,
-    AgentSkill,
-)
+from a2a.types import AgentCapabilities, AgentCard, AgentSkill
 
 from executor import Executor
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Run the tau2 agent (purple agent).")
+    parser = argparse.ArgumentParser(description="Run the invest agent (purple agent).")
     parser.add_argument("--host", type=str, default="127.0.0.1", help="Host to bind the server")
-    parser.add_argument("--port", type=int, default=9019, help="Port to bind the server")
+    parser.add_argument("--port", type=int, default=9119, help="Port to bind the server")
     parser.add_argument("--card-url", type=str, help="URL to advertise in the agent card")
-    parser.add_argument("--agent-llm", type=str, default="openai/gpt-4.1", help="LLM model to use")
     args = parser.parse_args()
 
-    os.environ.setdefault("TAU2_AGENT_LLM", args.agent_llm)
-
     skill = AgentSkill(
-        id="task_fulfillment",
-        name="Task Fulfillment",
-        description="Solves customer service tasks for tau-bench evaluation",
-        tags=["benchmark", "tau2"],
-        examples=[],
+        id="ticker_research",
+        name="Ticker Research",
+        description="Uses Perplexity to assess whether a ticker can rise by a target percentage.",
+        tags=["benchmark", "investing"],
+        examples=[
+            '{"tickers": ["RR"], "target_date": "12/31/2025", "research_window": {"start": "06/01/2025", "end": "09/30/2025"}}'
+        ],
     )
 
     agent_card = AgentCard(
-        name="tau2_agent",
-        description="Customer service agent for tau-bench evaluation",
+        name="invest_agent",
+        description="Perplexity-backed research agent for investment benchmark",
         url=args.card_url or f"http://{args.host}:{args.port}/",
         version="1.0.0",
         default_input_modes=["text"],
@@ -63,4 +64,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

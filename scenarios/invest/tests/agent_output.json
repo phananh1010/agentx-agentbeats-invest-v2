@@ -1,0 +1,38 @@
+{
+  "name": "Decisions",
+  "parts": [
+    {
+      "run_id": "5bc76170",
+      "target_date": "12/31/2025",
+      "target_increase_pct": 0.3,
+      "decisions": [
+        {
+          "ticker": "RR",
+          "verdict": "increase",
+          "confidence": 0.9,
+          "rationale": "Positive sentiment dominates fundamentals.",
+          "evidence": [
+            {
+              "title": "Forecast",
+              "url": "https://stockanalysis.com/stocks/rr/forecast/",
+              "date": "2025-09-19",
+              "snippet": "Analyst target of $6.00 implies roughly 42% upside from the $4.20 price in early Dec 2025; consensus rating Strong Buy."
+            },
+            {
+              "title": "RR Stock Fundamental Analysis - Financial Scores & Performance Indicators of Rolls-Royce Holdings plc",
+              "url": "https://stockinvest.us/financials/RR.L",
+              "date": "2025-07-23",
+              "snippet": "Financial dashboard shows Q2 2024 revenue about 4.43B and other balance sheet metrics; earnings update scheduled Jul 30, 2025."
+            },
+            {
+              "title": "Profile",
+              "url": "https://stockanalysis.com/stocks/rr/company/",
+              "date": "2025-09-30",
+              "snippet": "Richtech Robotics Inc. builds service robots and filed multiple SEC reports through Sep 2025; trades on NASDAQ as RR."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

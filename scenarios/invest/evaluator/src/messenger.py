@@ -1,5 +1,6 @@
 import json
 from uuid import uuid4
+from typing import Any, Dict, List, Tuple
 
 import httpx
 from a2a.client import (
@@ -16,7 +17,6 @@ from a2a.types import (
     TextPart,
 )
 
-
 DEFAULT_TIMEOUT = 300
 
 
@@ -30,14 +30,21 @@ def create_message(*, role: Role = Role.user, text: str, context_id: str | None 
     )
 
 
-def merge_parts(parts: list[Part]) -> str:
-    chunks: list[str] = []
+def _collect_parts(parts: List[Part]) -> Tuple[List[str], List[Dict[str, Any]]]:
+    texts: List[str] = []
+    data: List[Dict[str, Any]] = []
     for part in parts:
         if isinstance(part.root, TextPart):
-            chunks.append(part.root.text)
+            texts.append(part.root.text)
         elif isinstance(part.root, DataPart):
-            chunks.append(json.dumps(part.root.data, indent=2))
-    return "\n".join(chunks)
+            try:
+                data.append(part.root.data)
+            except Exception:
+                try:
+                    data.append(json.loads(json.dumps(part.root.data)))
+                except Exception:
+                    pass
+    return texts, data
 
 
 async def send_message(
@@ -51,10 +58,7 @@ async def send_message(
     async with httpx.AsyncClient(timeout=timeout) as httpx_client:
         resolver = A2ACardResolver(httpx_client=httpx_client, base_url=base_url)
         agent_card = await resolver.get_agent_card()
-        config = ClientConfig(
-            httpx_client=httpx_client,
-            streaming=streaming,
-        )
+        config = ClientConfig(httpx_client=httpx_client, streaming=streaming)
         factory = ClientFactory(config)
         client = factory.create(agent_card)
         if consumer:
@@ -62,7 +66,11 @@ async def send_message(
 
         outbound_msg = create_message(text=message, context_id=context_id)
         last_event = None
-        outputs: dict[str, object] = {"response": "", "context_id": None}
+        outputs: dict[str, object] = {
+            "response_text": "",
+            "context_id": None,
+            "data_parts": [],
+        }
 
         async for event in client.send_message(outbound_msg):
             last_event = event
@@ -70,16 +78,20 @@ async def send_message(
         match last_event:
             case Message() as msg:
                 outputs["context_id"] = msg.context_id
-                outputs["response"] = str(outputs["response"]) + merge_parts(msg.parts)
+                text_parts, data_parts = _collect_parts(msg.parts)
+                outputs["response_text"] = "\n".join(text_parts)
+                outputs["data_parts"] = data_parts
             case (task, _update):
                 outputs["context_id"] = task.context_id
-                outputs["status"] = task.status.state.value
                 status_msg = task.status.message
-                if status_msg:
-                    outputs["response"] = str(outputs["response"]) + merge_parts(status_msg.parts)
+                text_parts, data_parts = _collect_parts(status_msg.parts) if status_msg else ([], [])
+                outputs["response_text"] = "\n".join(text_parts)
                 if task.artifacts:
                     for artifact in task.artifacts:
-                        outputs["response"] = str(outputs["response"]) + merge_parts(artifact.parts)
+                        _, artifact_data = _collect_parts(artifact.parts)
+                        outputs["data_parts"].extend(artifact_data)
+                outputs["data_parts"].extend(data_parts)
+                outputs["status"] = task.status.state.value
             case _:
                 pass
 
@@ -96,7 +108,7 @@ class Messenger:
         url: str,
         new_conversation: bool = False,
         timeout: int = DEFAULT_TIMEOUT,
-    ) -> str:
+    ) -> dict[str, object]:
         outputs = await send_message(
             message=message,
             base_url=url,
@@ -104,10 +116,9 @@ class Messenger:
             timeout=timeout,
         )
         if outputs.get("status", "completed") != "completed":
-            raise RuntimeError(f"{url} responded with: {outputs}")
+            raise RuntimeError(f"{url} responded with non-completed status: {outputs}")
         self._context_ids[url] = outputs.get("context_id")
-        return str(outputs["response"])
+        return outputs
 
     def reset(self) -> None:
         self._context_ids = {}
-
