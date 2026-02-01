@@ -16,18 +16,6 @@ dependencies = [
     "uvicorn>=0.38.0",
 ]
 
-[project.optional-dependencies]
-debate = [
-    "google-genai>=1.36.0",
-]
-tau2-agent = [
-    "litellm>=1.0.0",
-]
-tau2-evaluator = [
-    "nest-asyncio>=1.6.0",
-    "tau2 @ git+https://github.com/sierra-research/tau2-bench.git",
-]
-
 [project.scripts]
 agentbeats-run = "agentbeats.run_scenario:main"
 
